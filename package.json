@@ -1,0 +1,14 @@
+{
+  "name": "phishkit",
+  "version": "1.0.0",
+  "description": "Minimal MVP phishing analyzer backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "playwright": "^1.49.0"
+  }
+}

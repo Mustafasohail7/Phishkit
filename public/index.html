@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PhishKit Inspector</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: Arial, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background: #f6f8fb;
+        color: #1f2937;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 24px 16px 48px;
+      }
+
+      h1 {
+        margin-bottom: 8px;
+        font-size: 2rem;
+      }
+
+      .subtitle {
+        margin-top: 0;
+        color: #4b5563;
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      input {
+        padding: 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 1rem;
+      }
+
+      button {
+        padding: 12px 14px;
+        border: none;
+        border-radius: 8px;
+        background: #2563eb;
+        color: white;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+
+      button:hover {
+        background: #1d4ed8;
+      }
+
+      .status {
+        margin-top: 12px;
+        color: #374151;
+      }
+
+      pre {
+        background: #111827;
+        color: #f9fafb;
+        padding: 14px;
+        border-radius: 8px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .screenshot {
+        margin-top: 16px;
+        display: none;
+      }
+
+      .screenshot img {
+        max-width: 100%;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+      }
+
+      .info {
+        margin-top: 28px;
+        padding-top: 16px;
+        border-top: 1px solid #e5e7eb;
+        color: #4b5563;
+        line-height: 1.6;
+      }
+
+      @media (max-width: 600px) {
+        h1 {
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>PhishKit Inspector</h1>
+      <p class="subtitle">Check a URL for common phishing indicators.</p>
+
+      <form id="analysis-form">
+        <input id="url-input" type="url" placeholder="Enter a URL to analyze" required />
+        <button type="submit">Analyze</button>
+      </form>
+
+      <div id="status" class="status">Waiting for analysis...</div>
+      <pre id="output">{} </pre>
+      <div id="screenshot-container" class="screenshot">
+        <img id="screenshot-image" alt="Captured page screenshot" />
+      </div>
+
+      <div class="info">
+        <p>
+          This tool exists to help people quickly inspect a webpage for suspicious signs that may indicate phishing.
+          It is intentionally simple and focuses on a few visible signals such as form behavior and submission targets.
+        </p>
+        <p>
+          Phishing often uses fake login pages, misleading domains, and urgent language to trick users into entering sensitive information.
+          A lightweight inspection tool can help raise awareness before a user clicks or submits anything.
+        </p>
+      </div>
+    </div>
+
+    <script>
+      const form = document.getElementById('analysis-form');
+      const urlInput = document.getElementById('url-input');
+      const output = document.getElementById('output');
+      const status = document.getElementById('status');
+      const screenshotContainer = document.getElementById('screenshot-container');
+      const screenshotImage = document.getElementById('screenshot-image');
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const url = urlInput.value.trim();
+
+        if (!url) {
+          status.textContent = 'Please enter a valid URL.';
+          return;
+        }
+
+        status.textContent = 'Analyzing...';
+        output.textContent = 'Loading...';
+        screenshotContainer.style.display = 'none';
+        screenshotImage.removeAttribute('src');
+
+        try {
+          const response = await fetch('/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Analysis failed');
+          }
+
+          const {screenshot: _,...final_data} = data;
+          console.log("final_data",final_data)
+          console.log("data",data)
+          output.textContent = JSON.stringify(final_data, null, 2);
+
+          if (data.screenshot && data.screenshot.data && data.screenshot.contentType) {
+            screenshotImage.src = `data:${data.screenshot.contentType};base64,${data.screenshot.data}`;
+            screenshotContainer.style.display = 'block';
+          }
+
+          status.textContent = 'Analysis completed.';
+        } catch (error) {
+          output.textContent = JSON.stringify({ error: error.message }, null, 2);
+          status.textContent = 'Analysis failed.';
+        }
+      });
+    </script>
+  </body>
+</html>
